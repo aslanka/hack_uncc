@@ -31,9 +31,9 @@ const SignUpScreen = ({ navigation }) => {
     })
       .then((response) => response.json())
       .then((data) => {
-        if (data.token) {
-          // Store the JWT token in AsyncStorage
-          AsyncStorage.setItem('token', data.token)
+        if (data.message === "registered") {
+          // Store the username in AsyncStorage
+          AsyncStorage.setItem('username', firstName + " " + lastName)
             .then(() => {
               // Navigate to the desired screen after successful signup
               navigation.navigate('DrawerNavigator');
@@ -48,6 +48,7 @@ const SignUpScreen = ({ navigation }) => {
         console.log('Error:', error);
       });
   };
+  
 
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);

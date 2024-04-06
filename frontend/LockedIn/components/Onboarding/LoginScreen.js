@@ -25,9 +25,9 @@ const LoginScreen = ({ navigation }) => {
     })
       .then((response) => response.json())
       .then((data) => {
-        if (data.token) {
-          // Store the JWT token in AsyncStorage
-          AsyncStorage.setItem('token', data.token)
+        if (data.message === "successfull") {
+          // Assuming the server sends back the user's name upon successful login
+          AsyncStorage.setItem('username', data.username)
             .then(() => {
               // Navigate to the desired screen after successful login
               navigation.replace('DrawerNavigator');
@@ -42,6 +42,7 @@ const LoginScreen = ({ navigation }) => {
         console.log('Error:', error);
       });
   };
+  
 
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
