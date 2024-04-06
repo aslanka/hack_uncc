@@ -1,16 +1,28 @@
 import React from 'react';
-import { View, Text, Button, StyleSheet, ScrollView, Image } from 'react-native';
+import { View, Text, Button, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const challenges = [
-  { title: '#read a book a day', image: 'https://placehold.co/600x400' },
-  { title: '#10 push ups a day', image: 'https://placehold.co/600x400' },
+  { title: '#drinkagallonofwater', image: 'https://placehold.co/600x400' },
+  { title: '#donteatjunkfoodtoday', image: 'https://placehold.co/600x400' },
   // Add more challenges here
 ];
 
 const MainScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
-      <ScrollView>
+      {/* Custom Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.toggleDrawer()}>
+          <Ionicons name="menu" size={24} color="white" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>LockedIn</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Friends')}>
+          <Ionicons name="people" size={24} color="white" />
+        </TouchableOpacity>
+      </View>
+      {/* Main Content */}
+      <ScrollView style={styles.content}>
         {challenges.map((challenge, index) => (
           <View key={index} style={styles.challenge}>
             <Text style={styles.title}>{challenge.title}</Text>
@@ -18,12 +30,15 @@ const MainScreen = ({ navigation }) => {
             <Image source={{ uri: challenge.image }} style={styles.image} resizeMode="cover" />
           </View>
         ))}
-        <Button
-          title="ADD your OWN"
-          onPress={() => navigation.navigate('AddChallenge')}
-          color="#232323"
-        />
       </ScrollView>
+      {/* Fixed Button */}
+      <View style={styles.addButtonContainer}>
+        <Button
+          title="Post a challenge"
+          onPress={() => navigation.navigate('AddChallenge')}
+          color="black"
+        />
+      </View>
     </View>
   );
 };
@@ -31,8 +46,23 @@ const MainScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 20,
     backgroundColor: '#000',
+  },
+  content: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#000',
+    paddingTop: 35,
+  },
+  headerTitle: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   challenge: {
     margin: 10,
@@ -51,7 +81,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
     borderRadius: 10,
-    resizeMode: 'cover', // Ensure the image covers the specified area
+    resizeMode: 'cover',
+  },
+  addButtonContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: '#02fff1',
+    borderRadius: 10,
+    marginBottom: 30,
   },
 });
 

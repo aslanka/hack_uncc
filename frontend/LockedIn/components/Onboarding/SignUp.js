@@ -16,7 +16,7 @@ const SignUpScreen = ({ navigation }) => {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    fetch(`https://${process.env.EXPO_PUBLIC_API_LOGIN_API}/auth/register`, {
+    fetch(`https://${process.env.EXPO_PUBLIC_API_LOGIN_API}/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
