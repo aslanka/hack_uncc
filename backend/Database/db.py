@@ -9,8 +9,8 @@ from __main__ import app
 
 load_dotenv()
 
-# uri = os.getenv("mongodb+srv://ayushlanka106:wCrF79lzDI6vKWcq@cluster0.7by8a1a.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0") 
-uri = "mongodb+srv://ayushlanka106:wCrF79lzDI6vKWcq@cluster0.7by8a1a.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+uri = os.getenv("MONGODB_URI") 
+
 client = MongoClient(uri)
 
 
