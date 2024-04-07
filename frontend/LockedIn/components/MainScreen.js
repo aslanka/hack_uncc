@@ -34,17 +34,20 @@ const MainScreen = ({ navigation }) => {
 
   const fetchChallenges = async () => {
     try {
+      console.log('Fetching challenges for:', currentUserEmail, 'Tab:', selectedTab); // Log the email and selected tab
       const response = await api.get('/challenges', {
         params: {
           email: currentUserEmail,
           type: selectedTab,
         },
       });
+      console.log('Challenges response:', response.data); // Log the response data
       setChallenges(response.data.challenges);
     } catch (error) {
       console.error('Error fetching challenges:', error);
     }
   };
+  
 
   const handleSubscribe = async (challengeId) => {
     try {
@@ -61,27 +64,42 @@ const MainScreen = ({ navigation }) => {
 
   const renderChallengeItem = ({ item }) => (
     <View style={styles.challenge}>
-      <Text style={styles.title}>
-        <Ionicons name="lock-closed" size={16} color="white" /> {item.title}
-      </Text>
-      <View style={styles.subscriptionSection}>
-        <TouchableOpacity
-          style={[styles.subscribeButton, item.subscribed ? styles.subscribedButton : styles.unsubscribedButton]}
-          onPress={() => handleSubscribe(item._id)}
-        >
-          <Text style={styles.subscribeButtonText}>
-            {item.subscribed ? 'Subscribed' : 'Subscribe'}
-          </Text>
-        </TouchableOpacity>
-        <View style={styles.friendTagsContainer}>
-          {item.subscribedFriends.map(friend => (
-            <Text key={friend} style={styles.friendTag}>{friend}</Text>
-          ))}
+        <Text style={styles.title}>
+            <Ionicons name="lock-closed" size={16} color="white" /> {item.title}
+        </Text>
+        <View style={styles.subscriptionSection}>
+            <TouchableOpacity
+                style={[styles.subscribeButton, item.subscribed ? styles.subscribedButton : styles.unsubscribedButton]}
+                onPress={() => handleSubscribe(item._id)}
+            >
+                <Text style={styles.subscribeButtonText}>
+                    {item.subscribed ? 'Subscribed' : 'Subscribe'}
+                </Text>
+            </TouchableOpacity>
+            <View style={styles.friendTagsContainer}>
+                {item.subscribedFriends.map(friend => (
+                    <Text key={friend} style={styles.friendTag}>{friend}</Text>
+                ))}
+            </View>
         </View>
-      </View>
-      <Image source={{ uri: item.image }} style={styles.image} resizeMode="cover" />
+        {item.images && item.images.length > 0 && (
+            <View style={styles.imageGrid}>
+                {item.images.slice(0, 6).map((imageId, index) => (
+                    <Image
+                        key={index}
+                        source={{ uri: `https://${process.env.EXPO_PUBLIC_API_LOGIN_API}/image/${imageId}` }}
+                        style={styles.imageSquare}
+                    />
+                ))}
+            </View>
+        )}
     </View>
-  );
+);
+
+
+  
+  
+  
   
   
 
@@ -161,6 +179,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'black',
     paddingVertical: 10,
     paddingHorizontal: 30,
+  },
+  imageSquare: {
+    width: 100,
+    height: 100,
+    marginRight: 10,
+    marginBottom: 10,
+    borderRadius: 10,
+  },
+  imageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 10,
   },
   tab: {
     paddingHorizontal: 20,

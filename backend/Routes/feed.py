@@ -1,7 +1,11 @@
 from __main__ import app
+from flask import Flask, request, jsonify
+from werkzeug.utils import secure_filename
+from gridfs import GridFS
 from bson import ObjectId
-from flask import request, jsonify
 from Database.db import db
+
+fs = GridFS(db)
 
 
 @app.route('/challenges', methods=['GET'])
@@ -23,16 +27,16 @@ def get_challenges():
     challenge_list = []
     for challenge in challenges:
         subscribed_friends = [friend for friend in challenge.get('subscribers', []) if friend in friend_emails]
+        image_ids = challenge.get('images', [])[:6]  # Limit to top 6 images
         challenge_list.append({
             '_id': str(challenge['_id']),
             'title': challenge['title'],
             'subscribed': email in challenge.get('subscribers', []),
             'subscribedFriends': subscribed_friends,
+            'images': image_ids,
         })
 
     return jsonify({'challenges': challenge_list}), 200
-
-
 
 @app.route('/subscribe_challenge', methods=['POST'])
 def subscribe_challenge():
@@ -70,32 +74,82 @@ def toggle_subscribe_challenge():
 
     return jsonify({'message': message}), 200
 
-
 @app.route('/create_challenge', methods=['POST'])
 def create_challenge():
-    title = request.json['title']
-    image = request.json['image']
-    email = request.json['email']
+    title = request.form['title']
+    email = request.form['email']
+    image = request.files.get('image')
 
-    challenge = db.Challenges.find_one({'title': title})
-    if challenge:
-        # Check if user is already subscribed
-        if email not in challenge.get('subscribers', []):
+    if not title or not email:
+        return jsonify({'error': 'Title and email are required'}), 400
+
+    # Check if a challenge with the same title already exists
+    existing_challenge = db.Challenges.find_one({'title': title})
+
+    if existing_challenge:
+        # Challenge exists, add the image to the existing challenge
+        if image:
+            filename = secure_filename(image.filename)
+            image_id = fs.put(image, filename=filename)
             db.Challenges.update_one(
-                {'_id': challenge['_id']},
-                {'$addToSet': {'subscribers': email}}
+                {'_id': existing_challenge['_id']},
+                {'$push': {'images': str(image_id)}}
             )
-            message = 'Subscribed to existing challenge'
-        else:
-            message = 'Already subscribed to this challenge'
+        return jsonify({
+            'message': 'Image added to existing challenge',
+            'challengeId': str(existing_challenge['_id']),
+            'imageId': str(image_id) if image else None
+        }), 200
     else:
-        new_challenge = {
+        # Challenge does not exist, create a new challenge
+        challenge = {
             'title': title,
-            'image': image,
             'createdBy': email,
             'subscribers': [email],
+            'images': []
         }
-        db.Challenges.insert_one(new_challenge)
-        message = 'New challenge created and subscribed'
+        challenge_id = db.Challenges.insert_one(challenge).inserted_id
 
-    return jsonify({'message': message}), 200
+        if image:
+            filename = secure_filename(image.filename)
+            image_id = fs.put(image, filename=filename)
+            db.Challenges.update_one(
+                {'_id': challenge_id},
+                {'$push': {'images': str(image_id)}}
+            )
+
+        return jsonify({
+            'message': 'New challenge created',
+            'challengeId': str(challenge_id),
+            'imageId': str(image_id) if image else None
+        }), 201
+    title = request.form['title']
+    email = request.form['email']
+    # You should have authentication in place to get the email, this is just for example
+    image = request.files.get('image')
+
+    # Validation (if title or email is empty, return an error)
+    if not title or not email:
+        return jsonify({'error': 'Title and email are required'}), 400
+
+    challenge = {
+        'title': title,
+        'createdBy': email,
+        'subscribers': [email],
+        'images': []
+    }
+    challenge_id = db.Challenges.insert_one(challenge).inserted_id
+
+    if image:
+        filename = secure_filename(image.filename)
+        image_id = fs.put(image, filename=filename)
+        db.Challenges.update_one(
+            {'_id': challenge_id},
+            {'$push': {'images': str(image_id)}}
+        )
+
+    return jsonify({
+        'message': 'Challenge created',
+        'challengeId': str(challenge_id),
+        'imageId': str(image_id) if image else None
+    }), 201

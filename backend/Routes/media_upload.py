@@ -12,27 +12,20 @@ import base64
 fs = GridFS(db)
 @app.route('/upload/image', methods=['POST'])
 def upload_image():
-    try:
-        # Get challenge_id from the request body or URL parameters
-        challenge_id = request.form.get('challenge_id')
-        if not challenge_id:
-            return jsonify({"error": "Challenge ID is required"}), 400
+    challenge_id = request.form.get('challenge_id')
+    image = request.files.get('image')
 
-        if 'image' in request.files:
-            image = request.files['image']
-            if image.filename != '':
-                # Save image to GridFS
-                filename = secure_filename(image.filename)
-                image_id = fs.put(image, filename=filename)
-                # Associate image with challenge by updating challenge document in MongoDB
-                db.Challenges.update_one({'_id': ObjectId(challenge_id)}, {'$push': {'images': str(image_id)}})
-                return jsonify({"message": "Image uploaded successfully", "image_id": str(image_id)})
-            else:
-                return jsonify({"error": "Invalid image file"}), 400
-        else:
-            return jsonify({"error": "No image part in the request"}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    if not challenge_id or not image:
+        return jsonify({'error': 'Challenge ID and image are required'}), 400
+
+    filename = secure_filename(image.filename)
+    image_id = fs.put(image, filename=filename)
+    db.Challenges.update_one(
+        {'_id': ObjectId(challenge_id)},
+        {'$push': {'images': str(image_id)}}
+    )
+    
+    return jsonify({'message': 'Image uploaded successfully', 'image_id': str(image_id)}), 200
 
 
 @app.route('/upload/video', methods=['POST'])
@@ -138,3 +131,14 @@ def get_videos_by_challenge_id(challenge_id):
 #             return jsonify({"error": "Challenge not found"}), 404
 #     except Exception as e:
 #         return jsonify({"error": str(e)}), 500
+
+@app.route('/image/<image_id>', methods=['GET'])
+def get_image_by_id(image_id):
+    try:
+        image_object = fs.get(ObjectId(image_id))
+        if image_object:
+            return send_file(image_object, mimetype='image/jpeg')
+        else:
+            return jsonify({"error": "Image not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
