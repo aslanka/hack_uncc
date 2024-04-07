@@ -7,6 +7,7 @@ const Onboarding = ({ navigation }) => {
       <View style={styles.iconsContainer}>
       </View>
       <View style={styles.circle}>
+        <Text style={styles.emoji}>🔓</Text>
       </View>
       <Text style={styles.headerText}>Welcome to LockedIn</Text>
       <Text style={styles.subHeaderText}>
@@ -50,9 +51,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 30,
   },
-  logoImage: {
-    width: 100,
-    height: 100,
+  unlockIcon: {
+    width: 60,
+    height: 60, 
   },
   headerText: {
     fontSize: 32,
@@ -84,6 +85,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
   },
+  emoji:{
+    fontSize: 80,
+  }
 });
 
 export default Onboarding;

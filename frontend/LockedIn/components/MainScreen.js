@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Button, StyleSheet, FlatList, Image, TouchableOpacity, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,6 +12,8 @@ const MainScreen = ({ navigation }) => {
   const [selectedTab, setSelectedTab] = useState('forYou');
   const [challenges, setChallenges] = useState([]);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     getCurrentUserEmail();
@@ -34,20 +36,19 @@ const MainScreen = ({ navigation }) => {
 
   const fetchChallenges = async () => {
     try {
-      console.log('Fetching challenges for:', currentUserEmail, 'Tab:', selectedTab); // Log the email and selected tab
+      console.log('Fetching challenges for:', currentUserEmail, 'Tab:', selectedTab);
       const response = await api.get('/challenges', {
         params: {
           email: currentUserEmail,
           type: selectedTab,
         },
       });
-      console.log('Challenges response:', response.data); // Log the response data
+      console.log('Challenges response:', response.data);
       setChallenges(response.data.challenges);
     } catch (error) {
       console.error('Error fetching challenges:', error);
     }
   };
-  
 
   const handleSubscribe = async (challengeId) => {
     try {
@@ -55,68 +56,69 @@ const MainScreen = ({ navigation }) => {
         email: currentUserEmail,
         challengeId: challengeId,
       });
-      fetchChallenges();
+      // Update the state directly to reflect the subscription change
+      setChallenges(challenges.map(challenge => {
+        if (challenge._id === challengeId) {
+          return { ...challenge, subscribed: !challenge.subscribed };
+        }
+        return challenge;
+      }));
     } catch (error) {
       console.error('Error toggling subscription to challenge:', error);
     }
   };
   
-
   const renderChallengeItem = ({ item }) => (
-    <View style={styles.challenge}>
-        <Text style={styles.title}>
-            <Ionicons name="lock-closed" size={16} color="white" /> {item.title}
-        </Text>
-        <View style={styles.subscriptionSection}>
-            <TouchableOpacity
-                style={[styles.subscribeButton, item.subscribed ? styles.subscribedButton : styles.unsubscribedButton]}
-                onPress={() => handleSubscribe(item._id)}
-            >
-                <Text style={styles.subscribeButtonText}>
-                    {item.subscribed ? 'Subscribed' : 'Subscribe'}
-                </Text>
+    <View style={[styles.challenge, item.subscribed ? styles.subscribedChallenge : null]}>
+      <Text style={styles.title}>{item.title}</Text>
+      <TouchableOpacity
+        style={[styles.subscribeButton, item.subscribed ? styles.subscribedButton : styles.unsubscribedButton]}
+        onPress={() => handleSubscribe(item._id)}
+      >
+        <Text style={styles.subscribeButtonText}>{item.subscribed ? 'LockedIn' : 'LockIn'}</Text>
+        <Ionicons
+          name={item.subscribed ? "lock-closed" : "lock-open"}
+          size={16}
+          color="white"
+          style={styles.lockIcon}
+        />
+      </TouchableOpacity>
+      <View style={styles.friendTagsContainer}>
+        {item.subscribedFriends.map(friend => (
+          <Text key={friend} style={styles.friendTag}>{friend}</Text>
+        ))}
+      </View>
+      {item.images && item.images.length > 0 && (
+        <View style={styles.imageGrid}>
+          {item.images.slice(0, 6).map((imageId, index) => (
+            <TouchableOpacity key={index} onPress={() => {
+              setSelectedImage(imageId);
+              setModalVisible(true);
+            }}>
+              <Image
+                source={{ uri: `https://${process.env.EXPO_PUBLIC_API_LOGIN_API}/image/${imageId}` }}
+                style={styles.imageSquare}
+              />
             </TouchableOpacity>
-            <View style={styles.friendTagsContainer}>
-                {item.subscribedFriends.map(friend => (
-                    <Text key={friend} style={styles.friendTag}>{friend}</Text>
-                ))}
-            </View>
+          ))}
         </View>
-        {item.images && item.images.length > 0 && (
-            <View style={styles.imageGrid}>
-                {item.images.slice(0, 6).map((imageId, index) => (
-                    <Image
-                        key={index}
-                        source={{ uri: `https://${process.env.EXPO_PUBLIC_API_LOGIN_API}/image/${imageId}` }}
-                        style={styles.imageSquare}
-                    />
-                ))}
-            </View>
-        )}
+      )}
     </View>
-);
-
-
-  
-  
-  
-  
+  );
   
 
   return (
     <View style={styles.container}>
-      {/* Custom Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.toggleDrawer()}>
           <Ionicons name="menu" size={24} color="white" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>LockedIn</Text>
+        <Text style={styles.headerTitle}>🔒LockedIn</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Friends')}>
           <Ionicons name="people" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
-      {/* Tab Toggle */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'forYou' && styles.selectedTab]}
@@ -136,7 +138,6 @@ const MainScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Main Content */}
       <FlatList
         style={styles.content}
         data={challenges}
@@ -144,10 +145,36 @@ const MainScreen = ({ navigation }) => {
         keyExtractor={(item) => item._id}
       />
 
-      {/* Fixed Button */}
       <View style={styles.addButtonContainer}>
         <Button title="Post a Challenge" onPress={() => navigation.navigate('AddChallenge')} color="black" />
       </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>Image Details</Text>
+            {selectedImage && (
+              <Image
+                source={{ uri: `https://${process.env.EXPO_PUBLIC_API_LOGIN_API}/image/${selectedImage}` }}
+                style={styles.modalImage}
+              />
+            )}
+            <TouchableOpacity
+              style={[styles.button, styles.buttonClose]}
+              onPress={() => setModalVisible(!modalVisible)}
+            >
+              <Text style={styles.textStyle}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -156,6 +183,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+    paddingTop: 20,
   },
   content: {
     flex: 1,
@@ -180,6 +208,47 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 30,
   },
+  tab: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+  },
+  selectedTab: {
+    backgroundColor: '#02fff1',
+    color: "black",
+  },
+  tabText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  selectedTabText: {
+    fontWeight: 'bold',
+    color: 'black',
+  },
+  challenge: {
+    margin: 10,
+    padding: 15,
+    backgroundColor: '#232323',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#424242",
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  title: {
+    color: 'white',
+    fontSize: 16,
+    flex: 1,
+  },
   imageSquare: {
     width: 100,
     height: 100,
@@ -192,43 +261,45 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginTop: 10,
   },
-  tab: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 3,
+  subscribeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    marginLeft: 'auto',
   },
-  selectedTab: {
+  subscribedButton: {
     backgroundColor: '#02fff1',
   },
-  tabText: {
-    color: 'white',
-    fontSize: 16,
-  },
-  selectedTabText: {
-    fontWeight: 'bold',
-  },
-  challenge: {
-    margin: 10,
-    padding: 15,
-    backgroundColor: '#232323',
-    borderRadius: 10,
+  unsubscribedButton: {
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: "#424242",
+    borderColor: '#02fff1',
   },
-  title: {
+  subscribeButtonText: {
     color: 'white',
-    fontSize: 16,
-    marginBottom: 10,
+    fontSize: 14,
   },
-  image: {
-    width: '100%',
-    height: 200,
-    borderRadius: 10,
-    resizeMode: 'cover',
+  lockIcon: {
+    marginLeft: 5,
+  },
+  subscribedChallenge: {
+    borderColor: '#02fff1',
+  },
+  friendTagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 5,
+  },
+  friendTag: {
+    backgroundColor: '#02fff1',
+    color: 'black',
+    borderRadius: 5,
+    padding: 5,
+    marginRight: 5,
+    marginBottom: 5,
   },
   addButtonContainer: {
     position: 'absolute',
@@ -239,41 +310,50 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 30,
   },
-  subscribeButton: {
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'black',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
+    color: 'white',
+  },
+  modalImage: {
+    width: 200,
+    height: 200,
+    marginBottom: 15,
+  },
+  button: {
+    borderRadius: 20,
     padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginTop: 10,
+    elevation: 2,
   },
-  subscribedButton: {
-    backgroundColor: 'blue',
+  buttonClose: {
+    backgroundColor: '#2196F3',
   },
-  unsubscribedButton: {
-    backgroundColor: 'white',
-  },
-  subscribeButtonText: {
-    color: 'black',
+  textStyle: {
+    color: 'white',
     fontWeight: 'bold',
+    textAlign: 'center',
   },
-  subscriptionSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  friendTagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  friendTag: {
-    backgroundColor: '#02fff1',
-    color: 'black',
-    borderRadius: 5,
-    padding: 5,
-    marginRight: 5,
-    marginBottom: 5,
-  },
-  
-  
 });
 
 export default MainScreen;
