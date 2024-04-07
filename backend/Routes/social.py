@@ -60,6 +60,8 @@ def add_friend():
                     current_user_pending_requests.remove(friend_email)
                     current_user['pending_friend_requests'] = current_user_pending_requests
                     db.Users.update_one({'email': current_user_email}, {'$set': {'pending_friend_requests': current_user_pending_requests}})
+
+
                 
                 # Add current user to friend's friends list
                 friend_friends = friend.get('friends_list', [])
