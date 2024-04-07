@@ -13,7 +13,7 @@ const LoginScreen = ({ navigation }) => {
       Alert.alert('Error', 'Please enter your email and password');
       return;
     }
-    fetch(`https://${process.env.EXPO_PUBLIC_API_LOGIN_API}/auth/login`, {
+    fetch(`https://${process.env.EXPO_PUBLIC_API_LOGIN_API}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -24,14 +24,12 @@ const LoginScreen = ({ navigation }) => {
       }),
     })
       .then((response) => response.json())
-      .then((data) => {
+      .then(async (data) => {
         if (data.message === "successfull") {
-          // Assuming the server sends back the user's name upon successful login
-          AsyncStorage.setItem('username', data.username)
-            .then(() => {
-              // Navigate to the desired screen after successful login
-              navigation.replace('DrawerNavigator');
-            });
+          // Store the user's email and name in AsyncStorage
+          await AsyncStorage.setItem('userEmail', email);
+          // Navigate to the desired screen after successful login
+          navigation.replace('DrawerNavigator');
         } else {
           // Handle login error
           console.log('Login error:', data.error);
@@ -42,6 +40,7 @@ const LoginScreen = ({ navigation }) => {
         console.log('Error:', error);
       });
   };
+  
   
 
   const toggleShowPassword = () => {

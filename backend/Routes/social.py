@@ -1,10 +1,24 @@
 from __main__ import app
-from Database.db import db
 from flask import request, jsonify
 import json
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+from Database.db import db
 from utils import get_user
+    
+@app.route('/get_friends', methods=['GET'])
+def get_friends():
+    current_user_email = request.args.get('current_user_email')
 
+    current_user = get_user(current_user_email)
 
+    if current_user:
+        friends = current_user.get('friends_list', [])
+        return jsonify({"friends": friends}), 200
+    else:
+        print("User not found")
+        return jsonify({"error": "User not found"}), 404
+        
 
 @app.route('/make_friend_request', methods=['POST'])
 def friend_request():
@@ -23,7 +37,6 @@ def friend_request():
         current_user['pending_friend_requests'] = current_user_pending_requests
         db.Users.update_one({'email': current_user_email}, {'$set': {'pending_friend_requests': current_user_pending_requests}})
 
-
         friend_incoming_requests = friend.get('incoming_friend_requests', [])
         friend_incoming_requests.append(current_user_email)
         friend['incoming_friend_requests'] = friend_incoming_requests
@@ -32,9 +45,6 @@ def friend_request():
         return jsonify({"message": "Friend request sent successfully"}), 200
     else:
         return jsonify({"error": "User not found"}), 404
-
-
-
 
 @app.route('/add_friend', methods=['POST'])
 def add_friend():
@@ -54,12 +64,12 @@ def add_friend():
                 current_user['friends_list'] = current_user_friends
                 db.Users.update_one({'email': current_user_email}, {'$set': {'friends_list': current_user_friends}})
                 
-                # Remove friend request from current user's pending requests
-                current_user_pending_requests = current_user.get('pending_friend_requests', [])
-                if friend_email in current_user_pending_requests:
-                    current_user_pending_requests.remove(friend_email)
-                    current_user['pending_friend_requests'] = current_user_pending_requests
-                    db.Users.update_one({'email': current_user_email}, {'$set': {'pending_friend_requests': current_user_pending_requests}})
+                # Remove friend request from current user's incoming requests
+                current_user_incoming_requests = current_user.get('incoming_friend_requests', [])
+                if friend_email in current_user_incoming_requests:
+                    current_user_incoming_requests.remove(friend_email)
+                    current_user['incoming_friend_requests'] = current_user_incoming_requests
+                    db.Users.update_one({'email': current_user_email}, {'$set': {'incoming_friend_requests': current_user_incoming_requests}})
                 
                 # Add current user to friend's friends list
                 friend_friends = friend.get('friends_list', [])
@@ -68,17 +78,31 @@ def add_friend():
                     friend['friends_list'] = friend_friends
                     db.Users.update_one({'email': friend_email}, {'$set': {'friends_list': friend_friends}})
                     
+                # Remove friend request from friend's pending requests
+                friend_pending_requests = friend.get('pending_friend_requests', [])
+                if current_user_email in friend_pending_requests:
+                    friend_pending_requests.remove(current_user_email)
+                    friend['pending_friend_requests'] = friend_pending_requests
+                    db.Users.update_one({'email': friend_email}, {'$set': {'pending_friend_requests': friend_pending_requests}})
+                    
                 return jsonify({"message": "Friend added successfully"}), 200
             else:
                 return jsonify({"error": "Friend already exists"}), 400
         elif action == 'decline':
-            # Remove friend request from current user's pending requests
-            current_user_pending_requests = current_user.get('pending_friend_requests', [])
-            if friend_email in current_user_pending_requests:
-                current_user_pending_requests.remove(friend_email)
-                current_user['pending_friend_requests'] = current_user_pending_requests
-                db.Users.update_one({'email': current_user_email}, {'$set': {'pending_friend_requests': current_user_pending_requests}})
+            # Remove friend request from current user's incoming requests
+            current_user_incoming_requests = current_user.get('incoming_friend_requests', [])
+            if friend_email in current_user_incoming_requests:
+                current_user_incoming_requests.remove(friend_email)
+                current_user['incoming_friend_requests'] = current_user_incoming_requests
+                db.Users.update_one({'email': current_user_email}, {'$set': {'incoming_friend_requests': current_user_incoming_requests}})
                 
+                # Remove friend request from friend's pending requests
+                friend_pending_requests = friend.get('pending_friend_requests', [])
+                if current_user_email in friend_pending_requests:
+                    friend_pending_requests.remove(current_user_email)
+                    friend['pending_friend_requests'] = friend_pending_requests
+                    db.Users.update_one({'email': friend_email}, {'$set': {'pending_friend_requests': friend_pending_requests}})
+                    
                 return jsonify({"message": "Friend request declined"}), 200
             else:
                 return jsonify({"error": "Friend request not found"}), 404
@@ -86,11 +110,10 @@ def add_friend():
             return jsonify({"error": "Invalid action"}), 400
     else:
         return jsonify({"error": "User not found"}), 404
-    
 
 @app.route('/get_pending_friend_requests', methods=['GET'])
 def get_pending_friend_requests():
-    current_user_email = request.json['current_user_email']
+    current_user_email = request.args.get('current_user_email')
 
     current_user = get_user(current_user_email)
 
@@ -102,7 +125,7 @@ def get_pending_friend_requests():
 
 @app.route('/get_incoming_friend_requests', methods=['GET'])
 def get_incoming_friend_requests():
-    current_user_email = request.json['current_user_email']
+    current_user_email = request.args.get('current_user_email')
 
     current_user = get_user(current_user_email)
 

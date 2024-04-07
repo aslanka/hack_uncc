@@ -16,7 +16,7 @@ const SignUpScreen = ({ navigation }) => {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    fetch(`https://${process.env.EXPO_PUBLIC_API_LOGIN_API}/auth/register`, {
+    fetch(`https://${process.env.EXPO_PUBLIC_API_LOGIN_API}/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -30,14 +30,13 @@ const SignUpScreen = ({ navigation }) => {
       }),
     })
       .then((response) => response.json())
-      .then((data) => {
+      .then(async (data) => {
         if (data.message === "registered") {
-          // Store the username in AsyncStorage
-          AsyncStorage.setItem('username', firstName + " " + lastName)
-            .then(() => {
-              // Navigate to the desired screen after successful signup
-              navigation.navigate('DrawerNavigator');
-            });
+          // Store the user's email and name in AsyncStorage
+          await AsyncStorage.setItem('userEmail', email);
+          await AsyncStorage.setItem('username', `${firstName} ${lastName}`);
+          // Navigate to the desired screen after successful signup
+          navigation.navigate('DrawerNavigator');
         } else {
           // Handle signup error
           console.log('Signup error:', data.error);
@@ -48,6 +47,7 @@ const SignUpScreen = ({ navigation }) => {
         console.log('Error:', error);
       });
   };
+  
   
 
   const toggleShowPassword = () => {
