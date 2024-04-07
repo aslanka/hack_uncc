@@ -112,3 +112,29 @@ def get_videos_by_challenge_id(challenge_id):
             return jsonify({"error": "Challenge not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# def get_images_by_challenge_id(challenge_id):
+#     try:
+#         # Retrieve list of image IDs associated with the given challenge ID
+#         challenge = db.Challenges.find_one({'_id': ObjectId(challenge_id)})
+#         if challenge:
+#             images = challenge.get('images', [])
+#             if images:
+#                 image_data = []
+#                 for image_id in images:
+#                     image_object = fs.get(ObjectId(image_id))
+#                     if image_object:
+#                         # Append image file to image_data list
+#                         image_data.append(image_object.read())
+#                 if image_data:
+#                     # Return list of image files using send_file
+#                     return send_file(image_data, mimetype='image/jpeg', as_attachment=True, attachment_filename='images.zip')
+#                 else:
+#                     return jsonify({"error": "No images found for this challenge"}), 404
+#             else:
+#                 return jsonify({"error": "No images found for this challenge"}), 404
+#         else:
+#             return jsonify({"error": "Challenge not found"}), 404
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
