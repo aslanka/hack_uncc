@@ -14,5 +14,6 @@ CORS(app, resources={r"/*": {"origins": ["http://localhost:8080", "*", " http://
 
 import Routes.auth
 import Routes.social
+import Routes.feed
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)

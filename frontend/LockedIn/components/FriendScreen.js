@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Image } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react'; // Import useCallback
 
 // Create an axios instance with the base URL
 const api = axios.create({
@@ -23,13 +24,15 @@ const FriendsScreen = () => {
     getCurrentUserEmail();
   }, []);
 
-  useEffect(() => {
-    if (currentUserEmail) {
-      fetchFriends();
-      fetchPendingRequests();
-      fetchIncomingRequests();
-    }
-  }, [currentUserEmail]);
+  useFocusEffect(
+    useCallback(() => {
+      if (currentUserEmail) {
+        fetchFriends();
+        fetchPendingRequests();
+        fetchIncomingRequests();
+      }
+    }, [currentUserEmail])
+  );
 
   const getCurrentUserEmail = async () => {
     try {

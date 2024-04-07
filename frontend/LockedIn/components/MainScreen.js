@@ -48,28 +48,42 @@ const MainScreen = ({ navigation }) => {
 
   const handleSubscribe = async (challengeId) => {
     try {
-      await api.post('/subscribe_challenge', {
+      await api.post('/toggle_subscribe_challenge', {
         email: currentUserEmail,
         challengeId: challengeId,
       });
       fetchChallenges();
     } catch (error) {
-      console.error('Error subscribing to challenge:', error);
+      console.error('Error toggling subscription to challenge:', error);
     }
   };
+  
 
   const renderChallengeItem = ({ item }) => (
     <View style={styles.challenge}>
-      <Text style={styles.title}>{item.title}</Text>
-      <Button
-        title={item.subscribed ? 'Subscribed' : 'Subscribe'}
-        color="#232323"
-        onPress={() => handleSubscribe(item._id)}
-        disabled={item.subscribed}
-      />
+      <Text style={styles.title}>
+        <Ionicons name="lock-closed" size={16} color="white" /> {item.title}
+      </Text>
+      <View style={styles.subscriptionSection}>
+        <TouchableOpacity
+          style={[styles.subscribeButton, item.subscribed ? styles.subscribedButton : styles.unsubscribedButton]}
+          onPress={() => handleSubscribe(item._id)}
+        >
+          <Text style={styles.subscribeButtonText}>
+            {item.subscribed ? 'Subscribed' : 'Subscribe'}
+          </Text>
+        </TouchableOpacity>
+        <View style={styles.friendTagsContainer}>
+          {item.subscribedFriends.map(friend => (
+            <Text key={friend} style={styles.friendTag}>{friend}</Text>
+          ))}
+        </View>
+      </View>
       <Image source={{ uri: item.image }} style={styles.image} resizeMode="cover" />
     </View>
   );
+  
+  
 
   return (
     <View style={styles.container}>
@@ -195,6 +209,41 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 30,
   },
+  subscribeButton: {
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  subscribedButton: {
+    backgroundColor: 'blue',
+  },
+  unsubscribedButton: {
+    backgroundColor: 'white',
+  },
+  subscribeButtonText: {
+    color: 'black',
+    fontWeight: 'bold',
+  },
+  subscriptionSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  friendTagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  friendTag: {
+    backgroundColor: '#02fff1',
+    color: 'black',
+    borderRadius: 5,
+    padding: 5,
+    marginRight: 5,
+    marginBottom: 5,
+  },
+  
+  
 });
 
 export default MainScreen;
