@@ -44,7 +44,7 @@ function DrawerNavigator() {
     >
       <Drawer.Screen name="Main" component={MainScreen} options={{ headerShown: false }}/>
       <Drawer.Screen name="AddChallenge" component={AddChallengeScreen} />
-      <Drawer.Screen name="Friends" component={FriendsScreen} />
+      <Drawer.Screen name="Friends" component={FriendsScreen} options={{ headerShown: false }}/>
       {/* Add additional screens here */}
     </Drawer.Navigator>
   );
