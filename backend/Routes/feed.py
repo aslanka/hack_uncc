@@ -26,7 +26,6 @@ def get_challenges():
         challenge_list.append({
             '_id': str(challenge['_id']),
             'title': challenge['title'],
-            'image': challenge['image'],
             'subscribed': email in challenge.get('subscribers', []),
             'subscribedFriends': subscribed_friends,
         })
